@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { socket } from "../App";
+import { startCapture } from "../utils/creenCapture";
 
 interface CallingProps {
   children?: React.ReactNode;
@@ -9,26 +10,9 @@ interface CallingProps {
 const Calling: React.FC<CallingProps> = ({}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
-  const remoteStream = useMemo(() => new MediaStream(), []);
+  const remoteStream = new MediaStream();
   const [isCamOpen, setIsCamOpen] = useState(false);
   const answerQued = useRef<RTCIceCandidateInit[]>([]);
-
-  const openWebCam = () => {
-    if (videoRef.current) {
-      const cam = videoRef.current;
-      navigator.mediaDevices
-        .getUserMedia({
-          video: true,
-        })
-        .then((mediastream) => {
-          cam.srcObject = mediastream;
-          setIsCamOpen(true);
-          mediastream.getTracks().forEach((track) => {
-            localConnection.addTrack(track, mediastream!);
-          });
-        });
-    }
-  };
 
   const offerCall = () => {
     socket.emit("calling");
@@ -46,9 +30,9 @@ const Calling: React.FC<CallingProps> = ({}) => {
             credential: import.meta.env.VITE_XIRSYS_CREDENTIAL,
             urls: [
               import.meta.env.VITE_STUNSERVER_2,
-              import.meta.env.VITE_STUNSERVER_3,
-              import.meta.env.VITE_STUNSERVER_4,
-              import.meta.env.VITE_STUNSERVER_5,
+              // import.meta.env.VITE_STUNSERVER_3,
+              // import.meta.env.VITE_STUNSERVER_4,
+              // import.meta.env.VITE_STUNSERVER_5,
             ],
           },
         ],
@@ -92,6 +76,30 @@ const Calling: React.FC<CallingProps> = ({}) => {
     socket.emit("send-offer", {
       offer: offerDescription,
     });
+  };
+
+  useEffect(() => {
+    socket.on("denied", () => {
+      console.log("denied");
+      toast("denied", {
+        type: "error",
+      });
+    });
+
+    // ANCHOR Accept
+    socket.on("accepted", () => {
+      console.log("accepted");
+      calling();
+    });
+
+    localConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        // ANCHOR Send event.candidate.toJson() to server
+        socket.emit("offer-send-candidate", {
+          candidate: event.candidate.toJSON(),
+        });
+      }
+    };
 
     // Listen for remote answer
     // ANCHOR Take answer and set it to remoteDescription
@@ -110,29 +118,7 @@ const Calling: React.FC<CallingProps> = ({}) => {
         });
       }
     });
-  };
 
-  useEffect(() => {
-    socket.on("denied", () => {
-      console.log("denied");
-      toast("denied", {
-        type: "error",
-      });
-    });
-
-    socket.on("accepted", () => {
-      console.log("accepted");
-      calling();
-    });
-
-    localConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        // ANCHOR Send event.candidate.toJson() to server
-        socket.emit("offer-send-candidate", {
-          candidate: event.candidate.toJSON(),
-        });
-      }
-    };
     // When answered, add candidate to peer connections
     socket.on("add-answer-candidate", async ({ answer }) => {
       console.log("add-answer-candidate");
@@ -158,6 +144,19 @@ const Calling: React.FC<CallingProps> = ({}) => {
       socket.off("answered");
     };
   }, []);
+
+  // ANCHOR Open WebCam
+  const openWebCam = async () => {
+    if (videoRef.current) {
+      const cam = videoRef.current;
+      const screen = await startCapture({});
+      cam.srcObject = screen;
+      setIsCamOpen(true);
+      screen!.getTracks().forEach((track) => {
+        localConnection.addTrack(track, screen!);
+      });
+    }
+  };
 
   return (
     <>

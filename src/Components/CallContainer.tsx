@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { socket } from "../App";
 import Calling from "./Calling";
-import HavingCall from "./HavingCall";
+import OpenCamWrapper from "./OpenCamWrapper";
 
 interface CallContainerProps {
   children?: React.ReactNode;
@@ -23,7 +23,6 @@ const CallContainer: React.FC<CallContainerProps> = ({}) => {
   }, []);
 
   const answerCall = () => {
-    socket.emit("accept");
     setHaveCall(false);
     setAccept(true);
   };
@@ -53,7 +52,7 @@ const CallContainer: React.FC<CallContainerProps> = ({}) => {
         </>
       )}
 
-      {accept ? <HavingCall /> : undefined}
+      {accept ? <OpenCamWrapper /> : undefined}
       {calling ? <Calling /> : undefined}
     </>
   );

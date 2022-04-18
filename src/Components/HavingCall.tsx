@@ -1,16 +1,21 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { socket } from "../App";
 
 interface HavingCallProps {
   children?: React.ReactNode;
+  media: MediaStream;
 }
 
-const HavingCall: React.FC<HavingCallProps> = ({}) => {
+const HavingCall: React.FC<HavingCallProps> = ({ media }) => {
   const offerQued = useRef<RTCIceCandidateInit[]>([]);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const remoteStream = new MediaStream();
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const sender = useRef<RTCRtpSender | null>(null);
+
+  useEffect(() => {
+    console.log("render");
+  });
 
   const localConnection = useMemo(
     () =>
@@ -24,9 +29,9 @@ const HavingCall: React.FC<HavingCallProps> = ({}) => {
             credential: import.meta.env.VITE_XIRSYS_CREDENTIAL,
             urls: [
               import.meta.env.VITE_STUNSERVER_2,
-              import.meta.env.VITE_STUNSERVER_3,
-              import.meta.env.VITE_STUNSERVER_4,
-              import.meta.env.VITE_STUNSERVER_5,
+              // import.meta.env.VITE_STUNSERVER_3,
+              // import.meta.env.VITE_STUNSERVER_4,
+              // import.meta.env.VITE_STUNSERVER_5,
             ],
           },
         ],
@@ -36,6 +41,21 @@ const HavingCall: React.FC<HavingCallProps> = ({}) => {
   );
 
   useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = media;
+    }
+
+    if (sender.current === null) {
+      media.getTracks().forEach((track) => {
+        sender.current = localConnection.addTrack(track, media);
+      });
+    } else {
+      console.log("replace track");
+      media.getTracks().forEach(async (track) => {
+        sender.current!.replaceTrack(track);
+      });
+    }
+
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
@@ -110,15 +130,6 @@ const HavingCall: React.FC<HavingCallProps> = ({}) => {
     };
   }, []);
 
-  useEffect(() => {
-    if (mediaStream) {
-      mediaStream.getVideoTracks().forEach((track) => {
-        console.log("adding track", track);
-        localConnection.addTrack(track, mediaStream);
-      });
-    }
-  }, [mediaStream]);
-
   return (
     <>
       <div className="videos">
@@ -129,28 +140,6 @@ const HavingCall: React.FC<HavingCallProps> = ({}) => {
         <span>
           <h3>Remote</h3>
           <video ref={remoteVideoRef} autoPlay></video>
-          <button
-            onClick={() => {
-              if (videoRef.current) {
-                const localVideo = videoRef.current;
-                navigator.mediaDevices
-                  .getUserMedia({
-                    audio: false,
-                    video: true,
-                  })
-                  .then((mediaStream) => {
-                    setMediaStream(mediaStream);
-                    // mediaStream.getTracks().forEach((track) => {
-                    //   console.log("adding track");
-                    //   localConnection.addTrack(track, mediaStream);
-                    // });
-                    localVideo.srcObject = mediaStream;
-                  });
-              }
-            }}
-          >
-            Open WebCam
-          </button>
         </span>
       </div>
     </>
