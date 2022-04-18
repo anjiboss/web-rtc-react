@@ -14,6 +14,7 @@ const CallContainer: React.FC<CallContainerProps> = ({}) => {
 
   useEffect(() => {
     socket.on("incoming-call", () => {
+      console.log("incoming call");
       setHaveCall(true);
     });
 
@@ -47,13 +48,17 @@ const CallContainer: React.FC<CallContainerProps> = ({}) => {
           </div>
         </div>
       ) : (
+        <></>
+      )}
+
+      {accept ? <OpenCamWrapper /> : undefined}
+      {calling ? (
+        <Calling />
+      ) : (
         <>
           <button onClick={call}>Call</button>
         </>
       )}
-
-      {accept ? <OpenCamWrapper /> : undefined}
-      {calling ? <Calling /> : undefined}
     </>
   );
 };

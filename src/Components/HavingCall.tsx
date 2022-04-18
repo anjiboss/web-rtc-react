@@ -86,6 +86,8 @@ const HavingCall: React.FC<HavingCallProps> = ({ media }) => {
           const answerDescription = await localConnection.createAnswer({});
           await localConnection.setLocalDescription(answerDescription);
           socket.emit("send-answer", { answer: answerDescription });
+        } else {
+          console.log("have local connection");
         }
 
         if (offerQued.current.length > 0) {

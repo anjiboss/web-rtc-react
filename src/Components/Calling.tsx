@@ -161,8 +161,10 @@ const Calling: React.FC<CallingProps> = ({}) => {
   return (
     <>
       Wanna Call!
-      <video ref={videoRef} autoPlay></video>
-      <video ref={remoteRef} autoPlay></video>
+      <div className="videos">
+        <video ref={videoRef} autoPlay></video>
+        <video ref={remoteRef} autoPlay></video>
+      </div>
       <button onClick={openWebCam}>Open Video</button>
       <button disabled={!isCamOpen} onClick={offerCall}>
         Call
