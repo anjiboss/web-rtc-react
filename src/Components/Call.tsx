@@ -1,26 +1,13 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
+import { toast } from "react-toastify";
+import { socket } from "../App";
 
 interface CallProps {
   children?: React.ReactNode;
-  videoStream: MediaStream | null;
 }
 
-const Call: React.FC<CallProps> = ({ videoStream }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    console.log(videoStream);
-    if (videoStream) {
-      if (videoRef.current) {
-        videoRef.current.srcObject = videoStream;
-        const player = videoRef.current;
-        videoRef.current.onloadedmetadata = () => {
-          player.play();
-        };
-      }
-    }
-  }, [videoRef.current, videoStream]);
-
+const Call: React.FC<CallProps> = ({}) => {
+  const answerQued = useRef<any[]>([]);
   const localConnection = useMemo(
     () =>
       new RTCPeerConnection({
@@ -44,9 +31,68 @@ const Call: React.FC<CallProps> = ({ videoStream }) => {
     []
   );
 
+  const calling = useCallback(async () => {
+    if (localConnection) {
+      localConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          // ANCHOR Send event.candidate.toJson() to server
+          socket.emit("offer-send-candidate", {
+            candidate: event.candidate.toJSON(),
+          });
+        }
+      };
+
+      // create offer
+      const offerDescription = await localConnection.createOffer();
+      await localConnection.setLocalDescription(offerDescription);
+      // send offer to server
+      // ANCHOR Send offer to server
+      socket.emit("send-offer", {
+        offer: offerDescription,
+      });
+
+      // Listen for remote answer
+      // ANCHOR Take answer and set it to remoteDescription
+      socket.on("answered", ({ answer }) => {
+        console.log({ answer });
+        if (!localConnection.currentRemoteDescription) {
+          localConnection.setRemoteDescription(answer).then(async () => {
+            console.log("set remote des");
+            if (answerQued.current.length > 0) {
+              for (let i = 0; i < answerQued.current.length; i++) {
+                await localConnection.addIceCandidate(
+                  new RTCIceCandidate(answerQued.current[i])
+                );
+              }
+            }
+          });
+        } else {
+          answerQued.current.push(answer);
+        }
+      });
+
+      // When answered, add candidate to peer connections
+      socket.on("add-answer-candidate", ({ answer }) => {
+        if (localConnection.remoteDescription) {
+          console.log("add-answer-candidate");
+          const candidate = new RTCIceCandidate(answer);
+          localConnection.addIceCandidate(candidate);
+        }
+      });
+      localConnection.onconnectionstatechange = () => {
+        console.log(
+          "%c connection state change: ",
+          "background: red; color: white",
+          localConnection.connectionState
+        );
+      };
+    } else {
+      toast("No Local WebRTC PeerConnection");
+    }
+  }, [localConnection]);
   return (
     <>
-      <video ref={videoRef}></video>
+      <button onClick={calling}>Call</button>
     </>
   );
 };
