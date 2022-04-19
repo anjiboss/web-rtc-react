@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useContext, useEffect, useMemo, useRef } from "react";
 import { socket } from "../App";
+import { CallContext } from "./CallContainer";
 
 interface HavingCallProps {
   children?: React.ReactNode;
@@ -12,6 +13,7 @@ const HavingCall: React.FC<HavingCallProps> = ({ media }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const remoteStream = new MediaStream();
   const sender = useRef<RTCRtpSender | null>(null);
+  const { room } = useContext(CallContext);
 
   useEffect(() => {
     console.log("render");
@@ -75,6 +77,7 @@ const HavingCall: React.FC<HavingCallProps> = ({ media }) => {
         if (event.candidate) {
           // ANCHOR Sending candidate
           socket.emit("answer-send-candidate", {
+            roomName: room,
             candidate: event.candidate.toJSON(),
           });
         }
@@ -85,7 +88,11 @@ const HavingCall: React.FC<HavingCallProps> = ({ media }) => {
         if (!localConnection.currentLocalDescription) {
           const answerDescription = await localConnection.createAnswer({});
           await localConnection.setLocalDescription(answerDescription);
-          socket.emit("send-answer", { answer: answerDescription });
+          socket.emit("send-answer", {
+            answer: answerDescription,
+
+            roomName: room,
+          });
         } else {
           console.log("have local connection");
         }
