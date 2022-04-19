@@ -29,12 +29,7 @@ const HavingCall: React.FC<HavingCallProps> = ({ media }) => {
           {
             username: import.meta.env.VITE_XIRSYS_USERNAME,
             credential: import.meta.env.VITE_XIRSYS_CREDENTIAL,
-            urls: [
-              import.meta.env.VITE_STUNSERVER_2,
-              // import.meta.env.VITE_STUNSERVER_3,
-              // import.meta.env.VITE_STUNSERVER_4,
-              // import.meta.env.VITE_STUNSERVER_5,
-            ],
+            urls: [import.meta.env.VITE_STUNSERVER_2],
           },
         ],
         iceCandidatePoolSize: 10,

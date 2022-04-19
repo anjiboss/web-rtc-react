@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { socket } from "../App";
-import CallContainer from "./CallContainer";
 import CallRoom from "./CallRoom";
 
 interface RoomProps {
@@ -9,8 +8,18 @@ interface RoomProps {
 
 export interface Room {
   roomName: string;
-  users: string[];
+  users: { username: string; socket: string }[];
 }
+
+interface Context {
+  username: string;
+  room: Room | null;
+}
+
+export const RoomContext = React.createContext<Context>({
+  username: "",
+  room: null,
+});
 
 const Room: React.FC<RoomProps> = ({}) => {
   const [newRoom, setNewRoom] = useState("");
@@ -64,11 +73,17 @@ const Room: React.FC<RoomProps> = ({}) => {
   const createNewRoom = useCallback(() => {
     console.log("do");
     socket.emit("create-room", { roomName: newRoom, user: username });
-    setSelectedRoom({ roomName: newRoom, users: [username] });
+    setSelectedRoom({
+      roomName: newRoom,
+      users: [{ username, socket: socket.id }],
+    });
     setRooms((prev) => {
       console.log("set room");
       let tmp = prev;
-      tmp = [...tmp, { roomName: newRoom, users: [username] }];
+      tmp = [
+        ...tmp,
+        { roomName: newRoom, users: [{ username, socket: socket.id }] },
+      ];
       return tmp;
     });
   }, [newRoom, username]);
@@ -80,17 +95,20 @@ const Room: React.FC<RoomProps> = ({}) => {
         let tmp = prev;
         tmp.forEach((r, i) => {
           if (r.roomName === room.roomName) {
-            tmp[i].users = [...tmp[i].users, username];
+            tmp[i].users = [...tmp[i].users, { username, socket: socket.id }];
           }
         });
         return tmp;
       });
-      setSelectedRoom({ ...room, users: [...room.users, username] });
+      setSelectedRoom({
+        ...room,
+        users: [...room.users, { username, socket: socket.id }],
+      });
     },
     [username]
   );
   return (
-    <>
+    <RoomContext.Provider value={{ username, room: selectedRoom }}>
       <div>
         <div>
           <span>Username:</span>
@@ -122,8 +140,8 @@ const Room: React.FC<RoomProps> = ({}) => {
         ))}
       </div>
 
-      {selectedRoom ? <CallRoom /> : undefined}
-    </>
+      {selectedRoom ? <CallRoom room={selectedRoom} /> : undefined}
+    </RoomContext.Provider>
   );
 };
 export default Room;
