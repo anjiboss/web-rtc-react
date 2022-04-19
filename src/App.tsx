@@ -9,12 +9,14 @@ export const socket = io(import.meta.env.VITE_SERVER);
 const App: React.FC = () => {
   useEffect(() => {
     socket.on("notify", ({ message }) => {
-      toast(message);
+      toast(message, { type: "success" });
     });
+
     return () => {
       socket.off("notify");
     };
   }, []);
+
   return (
     <>
       <ToastContainer />

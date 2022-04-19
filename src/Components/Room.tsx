@@ -31,7 +31,6 @@ const Room: React.FC<RoomProps> = ({}) => {
     // ANCHOR Rooms
     socket.emit("room-list");
     socket.on("rooms", ({ rooms }) => {
-      console.log(rooms);
       setRooms(rooms);
     });
 
@@ -42,7 +41,8 @@ const Room: React.FC<RoomProps> = ({}) => {
       });
     });
 
-    socket.on("user-join-room", ({ user }) => {
+    socket.on("user-join-room", (user) => {
+      console.log("user joined room", user);
       setSelectedRoom((prev) => {
         let tmp = prev!;
         tmp.users = [...prev!.users, user];
@@ -71,14 +71,12 @@ const Room: React.FC<RoomProps> = ({}) => {
   }, [rooms, selectedRoom]);
 
   const createNewRoom = useCallback(() => {
-    console.log("do");
     socket.emit("create-room", { roomName: newRoom, user: username });
     setSelectedRoom({
       roomName: newRoom,
       users: [{ username, socket: socket.id }],
     });
     setRooms((prev) => {
-      console.log("set room");
       let tmp = prev;
       tmp = [
         ...tmp,
@@ -118,26 +116,30 @@ const Room: React.FC<RoomProps> = ({}) => {
             onChange={(e) => setUsername(e.currentTarget.value)}
           />
         </div>
-        <span>
-          <h3>New Room</h3>
-          <input
-            type="text"
-            value={newRoom}
-            onChange={(e) => {
-              setNewRoom(e.currentTarget.value);
-            }}
-          />
-          <button onClick={createNewRoom}>Create Room {"&"} Join Room</button>
-        </span>
       </div>
-      <div>
-        <h3>Room List: </h3>
-        {rooms.map((room, i) => (
-          <div key={i}>
-            <h4>{room.roomName}</h4>
-            <button onClick={() => joinRoom(room)}>Join This Room</button>
-          </div>
-        ))}
+      <div style={{ display: "flex", justifyContent: "space-around" }}>
+        <div>
+          <h3>Room List: </h3>
+          {rooms.map((room, i) => (
+            <div key={i} style={{}}>
+              <span>{room.roomName}</span>
+              <button onClick={() => joinRoom(room)}>Join This Room</button>
+            </div>
+          ))}
+        </div>
+        <div>
+          <span>
+            <h3>New Room</h3>
+            <input
+              type="text"
+              value={newRoom}
+              onChange={(e) => {
+                setNewRoom(e.currentTarget.value);
+              }}
+            />
+            <button onClick={createNewRoom}>Create Room {"&"} Join Room</button>
+          </span>
+        </div>
       </div>
 
       {selectedRoom ? <CallRoom room={selectedRoom} /> : undefined}
