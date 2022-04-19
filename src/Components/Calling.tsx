@@ -1,8 +1,7 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { socket } from "../App";
 import { startCapture } from "../utils/creenCapture";
-import { CallContext } from "./CallContainer";
 
 interface CallingProps {
   children?: React.ReactNode;
@@ -14,10 +13,9 @@ const Calling: React.FC<CallingProps> = ({}) => {
   const remoteStream = new MediaStream();
   const [isCamOpen, setIsCamOpen] = useState(false);
   const answerQued = useRef<RTCIceCandidateInit[]>([]);
-  const { room } = useContext(CallContext);
 
   const offerCall = () => {
-    socket.emit("calling", { roomName: room });
+    socket.emit("calling");
   };
 
   const localConnection = useMemo(
@@ -50,7 +48,6 @@ const Calling: React.FC<CallingProps> = ({}) => {
         // ANCHOR Send event.candidate.toJson() to server
         socket.emit("offer-send-candidate", {
           candidate: event.candidate.toJSON(),
-          roomName: room,
         });
       }
     };
@@ -78,7 +75,6 @@ const Calling: React.FC<CallingProps> = ({}) => {
     // ANCHOR Send offer to server
     socket.emit("send-offer", {
       offer: offerDescription,
-      roomName: room,
     });
   };
 
@@ -101,7 +97,6 @@ const Calling: React.FC<CallingProps> = ({}) => {
         // ANCHOR Send event.candidate.toJson() to server
         socket.emit("offer-send-candidate", {
           candidate: event.candidate.toJSON(),
-          roomName: room,
         });
       }
     };

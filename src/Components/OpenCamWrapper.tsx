@@ -1,6 +1,5 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { socket } from "../App";
-import { CallContext } from "./CallContainer";
 import HavingCall from "./HavingCall";
 
 interface OpenCamWrapperProps {
@@ -10,7 +9,6 @@ interface OpenCamWrapperProps {
 const OpenCamWrapper: React.FC<OpenCamWrapperProps> = ({}) => {
   const [media, setMedia] = useState<null | MediaStream>(null);
   const send = useRef<number>(0);
-  const { room } = useContext(CallContext);
 
   useEffect(() => {
     navigator.mediaDevices
@@ -21,7 +19,7 @@ const OpenCamWrapper: React.FC<OpenCamWrapperProps> = ({}) => {
         setMedia(mediastream);
         // FIXME Find another better way!!
         if (send.current === 0) {
-          socket.emit("accept", { roomName: room });
+          socket.emit("accept");
           send.current++;
         }
       });
